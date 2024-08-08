@@ -12,6 +12,7 @@ pub const WW: f32 = 1200.0;
 pub const WH: f32 = 700.0;
 
 pub const PLAYER_SPEED: f32 = 2.0;
+pub const BULLET_SPEED: f32 = 10.0;
 
 // Colors
 pub const BG_COLOR: (u8, u8, u8) = (197, 204, 184);
@@ -40,6 +41,12 @@ pub struct Player;
 
 #[derive(Component)]
 pub struct Gun;
+
+#[derive(Component)]
+pub struct Bullet {
+    velocity: Vec3,
+    lifetime: Timer,
+}
 
 fn main() {
     App::new()
@@ -74,6 +81,8 @@ fn main() {
                 handle_player_input,
                 update_gun_transform,
                 update_cursor_position,
+                handle_gun_input,
+                update_bullets,
             )
                 .run_if(in_state(GameState::InGame)),
         )
@@ -225,12 +234,9 @@ fn update_gun_transform(
     };
     let mut gun_transform = gun_query.single_mut();
 
-    // let angle = (player_position.y - cursor_position.y)
-    //     .atan2(player_position.x - cursor_position.x)
-    //     + (2.0 * PI);
     let angle = (cursor_position.y - player_position.y)
         .atan2(cursor_position.x - player_position.x)
-        + (3.0 * PI / 2.0);
+        - (PI / 2.0);
     gun_transform.rotation = Quat::from_rotation_z(angle);
 
     let offset = 50.0;
@@ -239,4 +245,56 @@ fn update_gun_transform(
         player_position.y + offset * angle.cos(),
     );
     gun_transform.translation = vec3(new_gun_pos.x, new_gun_pos.y, gun_transform.translation.z);
+}
+
+fn handle_gun_input(
+    mut commands: Commands,
+    texture_atlas: Res<GlobalTextureAtlasHandle>,
+    image_handle: Res<GlobalSpriteSheetHandle>,
+    gun_query: Query<&Transform, (With<Gun>, Without<Player>)>,
+    mouse_input: Res<ButtonInput<MouseButton>>,
+) {
+    if gun_query.is_empty() {
+        return;
+    }
+    if mouse_input.just_pressed(MouseButton::Left) {
+        let gun = gun_query.single();
+        let gun_rotation = gun.rotation.to_euler(EulerRot::XYZ).2 + (PI / 2.0);
+
+        commands.spawn((
+            SpriteBundle {
+                texture: image_handle.0.clone().unwrap(),
+                transform: Transform {
+                    translation: gun.translation,
+                    rotation: gun.rotation,
+                    scale: Vec3::splat(SPRITE_SCALE_FACTOR),
+                },
+                ..default()
+            },
+            TextureAtlas {
+                layout: texture_atlas.0.clone().unwrap(),
+                index: 3,
+            },
+            Bullet {
+                velocity: vec3(gun_rotation.cos(), gun_rotation.sin(), 0.0).normalize()
+                    * BULLET_SPEED,
+                lifetime: Timer::from_seconds(5.0, TimerMode::Once),
+            },
+        ));
+    }
+}
+
+fn update_bullets(
+    mut commands: Commands,
+    time: Res<Time>,
+    mut bullet_query: Query<(Entity, &mut Transform, &mut Bullet)>,
+) {
+    for (bullet_entity, mut bullet_transform, mut bullet) in &mut bullet_query {
+        bullet.lifetime.tick(time.delta());
+        if bullet.lifetime.finished() {
+            commands.entity(bullet_entity).despawn();
+        } else {
+            bullet_transform.translation += bullet.velocity;
+        }
+    }
 }
