@@ -5,7 +5,9 @@ edition = "2021"
 
 [dependencies]
 bevy = "0.14"
+bevy_pancam = "0.13.0"
 log = {version = "*", features = ["max_level_debug", "release_max_level_warn"]}
+rand = "0.8.5"
 
 [workspace]
 resolver = "2"

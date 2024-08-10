@@ -5,6 +5,8 @@ use bevy::{
     prelude::*,
     window::PrimaryWindow,
 };
+use bevy_pancam::{PanCam, PanCamPlugin};
+use rand::Rng;
 
 pub const SPRITE_TILE_SIZE: u32 = 16;
 pub const SPRITE_SCALE_FACTOR: f32 = 3.0;
@@ -13,6 +15,11 @@ pub const WH: f32 = 700.0;
 
 pub const PLAYER_SPEED: f32 = 2.0;
 pub const BULLET_SPEED: f32 = 10.0;
+pub const GUN_FIRE_RATE: f32 = 0.125;
+
+pub const NUM_WORLD_DECORATIONS: usize = 1000;
+pub const WORLD_W: f32 = 3000.0;
+pub const WORLD_H: f32 = 2500.0;
 
 // Colors
 pub const BG_COLOR: (u8, u8, u8) = (197, 204, 184);
@@ -32,6 +39,14 @@ pub enum GameState {
     GameInit,
     InGame,
 }
+
+#[derive(Resource)]
+pub struct PlayerHealth {
+    value: u32,
+}
+
+#[derive(Component)]
+pub struct GunCooldown(Timer);
 
 #[derive(Component)]
 pub struct MainCamera;
@@ -68,22 +83,30 @@ fn main() {
             BG_COLOR.0, BG_COLOR.1, BG_COLOR.2,
         )))
         .insert_resource(Msaa::Off)
+        // External Plugins
+        .add_plugins(PanCamPlugin::default())
         // Custom Resources
         .insert_resource(GlobalTextureAtlasHandle(None))
         .insert_resource(GlobalSpriteSheetHandle(None))
         .insert_resource(CursorPos(None))
+        .insert_resource(PlayerHealth { value: 100 })
         // Systems
         .add_systems(OnEnter(GameState::Loading), load_assets)
-        .add_systems(OnEnter(GameState::GameInit), (setup_camera, init_world))
+        .add_systems(
+            OnEnter(GameState::GameInit),
+            (setup_camera, init_world, spawn_world_decoration),
+        )
         .add_systems(
             Update,
             (
                 handle_player_input,
+                camera_follow_player,
                 update_gun_transform,
                 update_cursor_position,
                 handle_gun_input,
                 update_bullets,
             )
+                .chain()
                 .run_if(in_state(GameState::InGame)),
         )
         .run();
@@ -96,8 +119,14 @@ fn load_assets(
     mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
     mut next_state: ResMut<NextState<GameState>>,
 ) {
-    image_handle.0 = Some(asset_server.load("0x72_DungeonTilesetII_v1.7/assets.png"));
-    let layout = TextureAtlasLayout::from_grid(UVec2::splat(SPRITE_TILE_SIZE), 4, 4, None, None);
+    image_handle.0 = Some(asset_server.load("assets.png"));
+    let layout = TextureAtlasLayout::from_grid(
+        UVec2::splat(SPRITE_TILE_SIZE),
+        4,
+        4,
+        Some(UVec2::splat(1)),
+        None,
+    );
     texture_atlas.0 = Some(texture_atlas_layouts.add(layout));
 
     next_state.set(GameState::GameInit);
@@ -129,7 +158,30 @@ fn load_assets(
 // }
 
 fn setup_camera(mut commands: Commands) {
-    commands.spawn((Camera2dBundle::default(), MainCamera));
+    commands
+        .spawn((Camera2dBundle::default(), MainCamera))
+        .insert(PanCam {
+            grab_buttons: Vec::new(),
+            min_scale: 1.0,
+            max_scale: 6.0,
+            ..default()
+        });
+}
+
+fn camera_follow_player(
+    player_query: Query<&Transform, With<Player>>,
+    mut camera_query: Query<&mut Transform, (With<Camera>, Without<Player>)>,
+) {
+    if camera_query.is_empty() || player_query.is_empty() {
+        return;
+    }
+
+    let mut camera_transform = camera_query.single_mut();
+    let player_transform = player_query.single().translation;
+
+    let (x, y) = (player_transform.x, player_transform.y);
+
+    camera_transform.translation = camera_transform.translation.lerp(vec3(x, y, 0.0), 1.0);
 }
 
 fn init_world(
@@ -141,7 +193,8 @@ fn init_world(
     commands.spawn((
         SpriteBundle {
             texture: image_handle.0.clone().unwrap(),
-            transform: Transform::from_scale(Vec3::splat(SPRITE_SCALE_FACTOR)),
+            transform: Transform::from_translation(vec3(0.0, 0.0, 3.0))
+                .with_scale(Vec3::splat(SPRITE_SCALE_FACTOR)),
             ..default()
         },
         TextureAtlas {
@@ -154,7 +207,8 @@ fn init_world(
     commands.spawn((
         SpriteBundle {
             texture: image_handle.0.clone().unwrap(),
-            transform: Transform::from_scale(Vec3::splat(SPRITE_SCALE_FACTOR)),
+            transform: Transform::from_translation(vec3(0.0, 0.0, 3.0))
+                .with_scale(Vec3::splat(SPRITE_SCALE_FACTOR)),
             ..default()
         },
         TextureAtlas {
@@ -162,6 +216,7 @@ fn init_world(
             index: 2,
         },
         Gun,
+        GunCooldown(Timer::from_seconds(GUN_FIRE_RATE, TimerMode::Once)),
     ));
 
     next_state.set(GameState::InGame);
@@ -182,16 +237,16 @@ fn handle_player_input(
     let right = keyboard_input.any_pressed([KeyCode::KeyS, KeyCode::ArrowRight]);
 
     let mut delta = Vec2::ZERO;
-    if up {
+    if up && transform.translation.y < WORLD_H {
         delta.y += 1.0;
     }
-    if down {
+    if down && transform.translation.y > -WORLD_H {
         delta.y -= 1.0;
     }
-    if left {
+    if left && transform.translation.x > -WORLD_W {
         delta.x -= 1.0;
     }
-    if right {
+    if right && transform.translation.x < WORLD_W {
         delta.x += 1.0;
     }
     delta = delta.normalize();
@@ -251,22 +306,27 @@ fn handle_gun_input(
     mut commands: Commands,
     texture_atlas: Res<GlobalTextureAtlasHandle>,
     image_handle: Res<GlobalSpriteSheetHandle>,
-    gun_query: Query<&Transform, (With<Gun>, Without<Player>)>,
+    mut gun_query: Query<(&Transform, &mut GunCooldown), (With<Gun>, Without<Player>)>,
+    time: Res<Time>,
     mouse_input: Res<ButtonInput<MouseButton>>,
 ) {
     if gun_query.is_empty() {
         return;
     }
-    if mouse_input.just_pressed(MouseButton::Left) {
-        let gun = gun_query.single();
-        let gun_rotation = gun.rotation.to_euler(EulerRot::XYZ).2 + (PI / 2.0);
+    let (gun_transform, mut gun_timer) = gun_query.single_mut();
+    gun_timer.0.tick(time.delta());
+    if mouse_input.just_pressed(MouseButton::Left)
+        || (mouse_input.pressed(MouseButton::Left) && gun_timer.0.finished())
+    {
+        gun_timer.0.reset();
+        let gun_rotation = gun_transform.rotation.to_euler(EulerRot::XYZ).2 + (PI / 2.0);
 
         commands.spawn((
             SpriteBundle {
                 texture: image_handle.0.clone().unwrap(),
                 transform: Transform {
-                    translation: gun.translation,
-                    rotation: gun.rotation,
+                    translation: gun_transform.translation,
+                    rotation: gun_transform.rotation,
                     scale: Vec3::splat(SPRITE_SCALE_FACTOR),
                 },
                 ..default()
@@ -291,10 +351,44 @@ fn update_bullets(
 ) {
     for (bullet_entity, mut bullet_transform, mut bullet) in &mut bullet_query {
         bullet.lifetime.tick(time.delta());
-        if bullet.lifetime.finished() {
+        let bullet_pos = bullet_transform.translation;
+        if bullet.lifetime.finished() || out_of_bounds(&bullet_pos, WORLD_W, WORLD_H) {
             commands.entity(bullet_entity).despawn();
         } else {
             bullet_transform.translation += bullet.velocity;
         }
+    }
+}
+
+fn out_of_bounds(pos: &Vec3, world_width: f32, world_h: f32) -> bool {
+    if pos.x > world_width || pos.x < -world_width || pos.y > world_h || pos.y < -world_h {
+        return true;
+    }
+    return false;
+}
+
+fn spawn_world_decoration(
+    mut commands: Commands,
+    texture_atlas: Res<GlobalTextureAtlasHandle>,
+    image_handle: Res<GlobalSpriteSheetHandle>,
+) {
+    let mut rng = rand::thread_rng();
+    for _ in 0..NUM_WORLD_DECORATIONS {
+        let x = rng.gen_range(-WORLD_W..WORLD_W);
+        let y = rng.gen_range(-WORLD_H..WORLD_H);
+
+        let z = rng.gen_range(0.0..3.0);
+        commands.spawn((
+            SpriteBundle {
+                texture: image_handle.0.clone().unwrap(),
+                transform: Transform::from_translation(vec3(x, y, z))
+                    .with_scale(Vec3::splat(SPRITE_SCALE_FACTOR)),
+                ..default()
+            },
+            TextureAtlas {
+                layout: texture_atlas.0.clone().unwrap(),
+                index: rng.gen_range(4..=5),
+            },
+        ));
     }
 }
