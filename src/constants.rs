@@ -3,9 +3,13 @@ pub const SPRITE_SCALE_FACTOR: f32 = 3.0;
 pub const WW: f32 = 1200.0;
 pub const WH: f32 = 700.0;
 
-pub const PLAYER_SPEED: f32 = 2.0;
-pub const BULLET_SPEED: f32 = 10.0;
+pub const PLAYER_SPEED: f32 = 200.0;
+pub const BULLET_SPEED: f32 = 1000.0;
 pub const GUN_FIRE_RATE: f32 = 0.125;
+
+pub const MAX_ENEMY_COUNT: usize = 1000;
+pub const ENEMY_SPAWN_RATE: f32 = 1.0;
+pub const ENEMY_SPEED: f32 = 150.0;
 
 pub const NUM_WORLD_DECORATIONS: usize = 1000;
 pub const WORLD_W: f32 = 6000.0;

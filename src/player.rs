@@ -17,6 +17,7 @@ impl Plugin for PlayerPlugin {
 fn handle_player_input(
     mut player_query: Query<&mut Transform, With<Player>>,
     keyboard_input: Res<ButtonInput<KeyCode>>,
+    time: Res<Time>,
 ) {
     if player_query.is_empty() {
         return;
@@ -44,6 +45,6 @@ fn handle_player_input(
     delta = delta.normalize();
 
     if delta.is_finite() {
-        transform.translation += vec3(delta.x, delta.y, 0.0) * PLAYER_SPEED;
+        transform.translation += vec3(delta.x, delta.y, 0.0) * PLAYER_SPEED * time.delta_seconds();
     }
 }

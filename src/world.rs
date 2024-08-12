@@ -15,18 +15,20 @@ impl Plugin for WorldPlugin {
 
 fn init_world(
     mut commands: Commands,
-    global_sprite: Res<GlobalSpriteTextureHandle>,
+    game_entities: Res<GameEntitySpriteAtlas>,
+    game_resources: Res<GameResourceSpriteAtlas>,
+    //global_sprite: Res<GlobalSpriteTextureHandle>,
     mut next_state: ResMut<NextState<GameState>>,
 ) {
     commands.spawn((
         SpriteBundle {
-            texture: global_sprite.sprite_sheet.clone().unwrap(),
+            texture: game_entities.entity_sheets[0].clone().unwrap(), //global_sprite.sprite_sheet.clone().unwrap(),
             transform: Transform::from_translation(vec3(0.0, 0.0, 3.0))
                 .with_scale(Vec3::splat(SPRITE_SCALE_FACTOR)),
             ..default()
         },
         TextureAtlas {
-            layout: global_sprite.texture_atlas.clone().unwrap(),
+            layout: game_entities.atlas_layout.clone().unwrap(), //global_sprite.texture_atlas.clone().unwrap(),
             index: 0,
         },
         Player,
@@ -34,14 +36,14 @@ fn init_world(
 
     commands.spawn((
         SpriteBundle {
-            texture: global_sprite.sprite_sheet.clone().unwrap(),
+            texture: game_resources.sprite_sheet.clone().unwrap(), //global_sprite.sprite_sheet.clone().unwrap(),
             transform: Transform::from_translation(vec3(0.0, 0.0, 3.0))
                 .with_scale(Vec3::splat(SPRITE_SCALE_FACTOR)),
             ..default()
         },
         TextureAtlas {
-            layout: global_sprite.texture_atlas.clone().unwrap(),
-            index: 2,
+            layout: game_resources.atlas_layout.clone().unwrap(), //global_sprite.texture_atlas.clone().unwrap(),
+            index: 0,
         },
         Gun,
         GunCooldown(Timer::from_seconds(GUN_FIRE_RATE, TimerMode::Once)),
@@ -52,25 +54,24 @@ fn init_world(
 
 fn spawn_world_decoration(
     mut commands: Commands,
-    global_sprite: Res<GlobalSpriteTextureHandle>, // texture_atlas: Res<GlobalTextureAtlasHandle>,
-                                                   // image_handle: Res<GlobalSpriteSheetHandle>,
+    game_decorations: Res<GameDecorationSpriteAtlas>,
+    //global_sprite: Res<GlobalSpriteTextureHandle>, // texture_atlas: Res<GlobalTextureAtlasHandle>,
+    // image_handle: Res<GlobalSpriteSheetHandle>,
 ) {
     let mut rng = rand::thread_rng();
     for _ in 0..NUM_WORLD_DECORATIONS {
         let x = rng.gen_range(-WORLD_W..WORLD_W);
         let y = rng.gen_range(-WORLD_H..WORLD_H);
-
-        let z = rng.gen_range(0.0..3.0);
         commands.spawn((
             SpriteBundle {
-                texture: global_sprite.sprite_sheet.clone().unwrap(),
-                transform: Transform::from_translation(vec3(x, y, z))
+                texture: game_decorations.sprite_sheet.clone().unwrap(),
+                transform: Transform::from_translation(vec3(x, y, 1.0))
                     .with_scale(Vec3::splat(SPRITE_SCALE_FACTOR)),
                 ..default()
             },
             TextureAtlas {
-                layout: global_sprite.texture_atlas.clone().unwrap(),
-                index: rng.gen_range(4..=5),
+                layout: game_decorations.atlas_layout.clone().unwrap(),
+                index: rng.gen_range(0..=1),
             },
         ));
     }

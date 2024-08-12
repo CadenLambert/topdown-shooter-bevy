@@ -60,7 +60,8 @@ fn update_gun_transform(
 
 fn handle_gun_input(
     mut commands: Commands,
-    global_sprite: Res<GlobalSpriteTextureHandle>,
+    game_resource: Res<GameResourceSpriteAtlas>,
+    //global_sprite: Res<GlobalSpriteTextureHandle>,
     mut gun_query: Query<(&Transform, &mut GunCooldown), (With<Gun>, Without<Player>)>,
     time: Res<Time>,
     mouse_input: Res<ButtonInput<MouseButton>>,
@@ -78,7 +79,7 @@ fn handle_gun_input(
 
         commands.spawn((
             SpriteBundle {
-                texture: global_sprite.sprite_sheet.clone().unwrap(),
+                texture: game_resource.sprite_sheet.clone().unwrap(),
                 transform: Transform {
                     translation: gun_transform.translation,
                     rotation: gun_transform.rotation,
@@ -87,8 +88,8 @@ fn handle_gun_input(
                 ..default()
             },
             TextureAtlas {
-                layout: global_sprite.texture_atlas.clone().unwrap(),
-                index: 3,
+                layout: game_resource.atlas_layout.clone().unwrap(),
+                index: 1,
             },
             Bullet {
                 velocity: vec3(gun_rotation.cos(), gun_rotation.sin(), 0.0).normalize()
@@ -110,7 +111,7 @@ fn update_bullets(
         if bullet.lifetime.finished() || out_of_bounds(&bullet_pos, WORLD_W, WORLD_H) {
             commands.entity(bullet_entity).despawn();
         } else {
-            bullet_transform.translation += bullet.velocity;
+            bullet_transform.translation += bullet.velocity * time.delta_seconds();
         }
     }
 }

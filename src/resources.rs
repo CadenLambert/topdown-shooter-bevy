@@ -9,15 +9,29 @@ pub struct GlobalSpriteTextureHandle {
 }
 
 #[derive(Resource)]
-pub struct GlobalTextureAtlasHandle();
+pub struct GameResourceSpriteAtlas {
+    pub atlas_layout: Option<Handle<TextureAtlasLayout>>,
+    pub sprite_sheet: Option<Handle<Image>>,
+}
+
 #[derive(Resource)]
-pub struct GlobalSpriteSheetHandle(Option<Handle<Image>>);
+pub struct GameEntitySpriteAtlas {
+    pub atlas_layout: Option<Handle<TextureAtlasLayout>>,
+    pub entity_sheets: Vec<Option<Handle<Image>>>,
+}
+
+#[derive(Resource)]
+pub struct GameDecorationSpriteAtlas {
+    pub atlas_layout: Option<Handle<TextureAtlasLayout>>,
+    pub sprite_sheet: Option<Handle<Image>>,
+}
+
 #[derive(Resource)]
 pub struct CursorPos(pub Option<Vec2>);
 
 #[derive(Resource)]
 pub struct PlayerHealth {
-    value: u32,
+    pub value: u32,
 }
 
 pub struct ResourcesPlugin;
@@ -29,9 +43,21 @@ impl Plugin for ResourcesPlugin {
         )))
         .insert_resource(Msaa::Off)
         // Custom Resources
-        .insert_resource(GlobalSpriteTextureHandle {
-            texture_atlas: None,
+        // .insert_resource(GlobalSpriteTextureHandle {
+        //     texture_atlas: None,
+        //     sprite_sheet: None,
+        // })
+        .insert_resource(GameResourceSpriteAtlas {
+            atlas_layout: None,
             sprite_sheet: None,
+        })
+        .insert_resource(GameDecorationSpriteAtlas {
+            atlas_layout: None,
+            sprite_sheet: None,
+        })
+        .insert_resource(GameEntitySpriteAtlas {
+            atlas_layout: None,
+            entity_sheets: vec![None; 6],
         })
         .insert_resource(CursorPos(None))
         .insert_resource(PlayerHealth { value: 100 })
@@ -44,20 +70,57 @@ impl Plugin for ResourcesPlugin {
 }
 
 fn load_assets(
-    mut global_sprite: ResMut<GlobalSpriteTextureHandle>,
+    //mut global_sprite: ResMut<GlobalSpriteTextureHandle>,
+    mut game_entity: ResMut<GameEntitySpriteAtlas>,
+    mut game_resource: ResMut<GameResourceSpriteAtlas>,
+    mut game_decoration: ResMut<GameDecorationSpriteAtlas>,
     asset_server: Res<AssetServer>,
     mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
     mut next_state: ResMut<NextState<GameState>>,
 ) {
-    global_sprite.sprite_sheet = Some(asset_server.load("assets.png"));
-    let layout = TextureAtlasLayout::from_grid(
+    // global_sprite.sprite_sheet = Some(asset_server.load("assets.png"));
+    // let layout = TextureAtlasLayout::from_grid(
+    //     UVec2::splat(SPRITE_TILE_SIZE),
+    //     8,
+    //     8,
+    //     Some(UVec2::splat(1)),
+    //     None,
+    // );
+    // global_sprite.texture_atlas = Some(texture_atlas_layouts.add(layout));
+    let common_entity_layout = TextureAtlasLayout::from_grid(
         UVec2::splat(SPRITE_TILE_SIZE),
         4,
-        4,
+        2,
         Some(UVec2::splat(1)),
         None,
     );
-    global_sprite.texture_atlas = Some(texture_atlas_layouts.add(layout));
+    game_entity.atlas_layout = Some(texture_atlas_layouts.add(common_entity_layout));
+    game_entity.entity_sheets[0] = Some(asset_server.load("player_sheet.png"));
+    game_entity.entity_sheets[1] = Some(asset_server.load("grub_sheet.png"));
+    game_entity.entity_sheets[2] = Some(asset_server.load("skele_sheet.png"));
+    game_entity.entity_sheets[3] = Some(asset_server.load("gob_sheet.png"));
+    game_entity.entity_sheets[4] = Some(asset_server.load("devil_sheet.png"));
+    game_entity.entity_sheets[5] = Some(asset_server.load("demon_sheet.png"));
+
+    let resource_layout = TextureAtlasLayout::from_grid(
+        UVec2::splat(SPRITE_TILE_SIZE),
+        6,
+        1,
+        Some(UVec2::splat(1)),
+        None,
+    );
+    game_resource.atlas_layout = Some(texture_atlas_layouts.add(resource_layout));
+    game_resource.sprite_sheet = Some(asset_server.load("resource_sheet.png"));
+
+    let decoration_layout = TextureAtlasLayout::from_grid(
+        UVec2::splat(SPRITE_TILE_SIZE),
+        2,
+        1,
+        Some(UVec2::splat(1)),
+        None,
+    );
+    game_decoration.atlas_layout = Some(texture_atlas_layouts.add(decoration_layout));
+    game_decoration.sprite_sheet = Some(asset_server.load("decoration_sheet.png"));
 
     next_state.set(GameState::GameInit);
 }
