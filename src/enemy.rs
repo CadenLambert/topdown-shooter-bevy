@@ -6,6 +6,7 @@ use crate::constants::{
 use crate::player::Player;
 use crate::resources::GameEntitySpriteAtlas;
 use crate::state::GameState;
+use crate::world::GameEntity;
 use bevy::{math::vec3, prelude::*};
 use rand::Rng;
 
@@ -117,6 +118,7 @@ fn spawn_enemies(
                 Enemy::default(),
                 EnemyState::default(),
                 AnimationTimer(Timer::from_seconds(0.125, TimerMode::Repeating)),
+                GameEntity,
             ));
         }
         spawn_timer.0.reset();

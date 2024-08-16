@@ -9,6 +9,9 @@ use crate::{
 use bevy::{math::vec3, prelude::*};
 use rand::Rng;
 
+#[derive(Component)]
+pub struct GameEntity;
+
 pub struct WorldPlugin;
 
 impl Plugin for WorldPlugin {
@@ -16,7 +19,8 @@ impl Plugin for WorldPlugin {
         app.add_systems(
             OnEnter(GameState::GameInit),
             (init_world, spawn_world_decoration),
-        );
+        )
+        .add_systems(OnExit(GameState::InGame), despawn_all_game_entities);
     }
 }
 
@@ -24,7 +28,7 @@ fn init_world(
     mut commands: Commands,
     game_entities: Res<GameEntitySpriteAtlas>,
     game_resources: Res<GameResourceSpriteAtlas>,
-    //global_sprite: Res<GlobalSpriteTextureHandle>,
+    mut player_health: ResMut<PlayerHealth>,
     mut next_state: ResMut<NextState<GameState>>,
 ) {
     commands.spawn((
@@ -41,6 +45,7 @@ fn init_world(
         Player,
         PlayerState::default(),
         AnimationTimer(Timer::from_seconds(0.125, TimerMode::Repeating)),
+        GameEntity,
     ));
 
     commands.spawn((
@@ -56,7 +61,10 @@ fn init_world(
         },
         Gun,
         GunCooldown(Timer::from_seconds(GUN_FIRE_RATE, TimerMode::Once)),
+        GameEntity,
     ));
+
+    player_health.value = 100.0;
 
     next_state.set(GameState::InGame);
 }
@@ -82,6 +90,16 @@ fn spawn_world_decoration(
                 layout: game_decorations.atlas_layout.clone().unwrap(),
                 index: rng.gen_range(0..=1),
             },
+            GameEntity,
         ));
+    }
+}
+
+fn despawn_all_game_entities(
+    mut commands: Commands,
+    all_entities: Query<Entity, With<GameEntity>>,
+) {
+    for e in all_entities.iter() {
+        commands.entity(e).despawn_recursive();
     }
 }

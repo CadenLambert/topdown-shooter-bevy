@@ -1,4 +1,6 @@
-use crate::{constants::*, out_of_bounds, player::Player, resources::*, state::*};
+use crate::{
+    constants::*, out_of_bounds, player::Player, resources::*, state::*, world::GameEntity,
+};
 use bevy::{
     math::{vec2, vec3},
     prelude::*,
@@ -96,6 +98,7 @@ fn handle_gun_input(
                     * BULLET_SPEED,
                 lifetime: Timer::from_seconds(5.0, TimerMode::Once),
             },
+            GameEntity,
         ));
     }
 }

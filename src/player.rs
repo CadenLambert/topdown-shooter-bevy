@@ -20,7 +20,11 @@ impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<PlayerEnemyCollisionEvent>().add_systems(
             Update,
-            (handle_player_input, handle_player_enemy_collision_events)
+            (
+                handle_player_death,
+                handle_player_input,
+                handle_player_enemy_collision_events,
+            )
                 .run_if(in_state(GameState::InGame)),
         );
     }
@@ -70,5 +74,14 @@ fn handle_player_input(
         *state = PlayerState::Run;
     } else {
         *state = PlayerState::Idle;
+    }
+}
+
+fn handle_player_death(
+    player_health: Res<PlayerHealth>,
+    mut next_state: ResMut<NextState<GameState>>,
+) {
+    if player_health.value <= 0.0 {
+        next_state.set(GameState::MainMenu);
     }
 }

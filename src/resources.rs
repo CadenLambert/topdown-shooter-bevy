@@ -108,7 +108,7 @@ fn load_assets(
     game_decoration.atlas_layout = Some(texture_atlas_layouts.add(decoration_layout));
     game_decoration.sprite_sheet = Some(asset_server.load("decoration_sheet.png"));
 
-    next_state.set(GameState::GameInit);
+    next_state.set(GameState::MainMenu);
 }
 
 fn update_cursor_position(
