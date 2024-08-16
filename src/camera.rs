@@ -32,7 +32,7 @@ fn camera_follow_player(
 
     let (x, y) = (player_transform.x, player_transform.y);
 
-    camera_transform.translation = camera_transform.translation.lerp(vec3(x, y, 0.0), 1.0);
+    camera_transform.translation = camera_transform.translation.lerp(vec3(x, y, 0.0), 0.1);
 }
 
 fn setup_camera(mut commands: Commands) {
@@ -40,7 +40,7 @@ fn setup_camera(mut commands: Commands) {
         .spawn((Camera2dBundle::default(), MainCamera))
         .insert(PanCam {
             grab_buttons: Vec::new(),
-            min_scale: 1.0,
+            min_scale: 0.5,
             max_scale: 6.0,
             zoom_to_cursor: false,
             ..default()

@@ -1,4 +1,11 @@
-use crate::{constants::*, gun::*, player::Player, resources::*, state::*};
+use crate::{
+    animations::AnimationTimer,
+    constants::*,
+    gun::*,
+    player::{Player, PlayerState},
+    resources::*,
+    state::*,
+};
 use bevy::{math::vec3, prelude::*};
 use rand::Rng;
 
@@ -32,6 +39,8 @@ fn init_world(
             index: 0,
         },
         Player,
+        PlayerState::default(),
+        AnimationTimer(Timer::from_seconds(0.125, TimerMode::Repeating)),
     ));
 
     commands.spawn((

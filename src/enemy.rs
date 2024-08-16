@@ -1,8 +1,9 @@
+use crate::animations::AnimationTimer;
 use crate::constants::{
     ENEMY_SPAWN_RATE, ENEMY_SPEED, MAX_ENEMY_COUNT, SPRITE_SCALE_FACTOR, WORLD_H, WORLD_W,
 };
 use crate::player::Player;
-use crate::resources::{GameEntitySpriteAtlas, GlobalSpriteTextureHandle};
+use crate::resources::GameEntitySpriteAtlas;
 use crate::state::GameState;
 use bevy::{math::vec3, prelude::*};
 use rand::Rng;
@@ -17,6 +18,36 @@ pub enum EnemyType {
     Gob = 3,
     Devil = 4,
     Demon = 5,
+}
+
+#[derive(Component, Default)]
+pub enum EnemyState {
+    Idle,
+    #[default]
+    Run,
+}
+
+impl EnemyType {
+    pub fn get_random_enemy_type() -> Self {
+        let mut rng = rand::thread_rng();
+        return match rng.gen_range(0..5) {
+            0 => Self::Grub,
+            1 => Self::Skele,
+            2 => Self::Gob,
+            3 => Self::Devil,
+            _ => Self::Demon,
+        };
+    }
+
+    pub fn get_sprite_sheet_index(&self) -> usize {
+        match self {
+            EnemyType::Grub => 1,
+            EnemyType::Skele => 2,
+            EnemyType::Gob => 3,
+            EnemyType::Devil => 4,
+            EnemyType::Demon => 5,
+        }
+    }
 }
 
 #[derive(Resource)]
@@ -72,6 +103,8 @@ fn spawn_enemies(
                     index: 0,
                 },
                 Enemy,
+                EnemyState::default(),
+                AnimationTimer(Timer::from_seconds(0.125, TimerMode::Repeating)),
             ));
         }
         spawn_timer.0.reset();
@@ -94,28 +127,5 @@ fn approach_player(
             * ENEMY_SPEED
             * time.delta_seconds();
         enemy.translation += vec3(direction.x, direction.y, 0.0);
-    }
-}
-
-impl EnemyType {
-    pub fn get_random_enemy_type() -> Self {
-        let mut rng = rand::thread_rng();
-        return match rng.gen_range(0..5) {
-            0 => Self::Grub,
-            1 => Self::Skele,
-            2 => Self::Gob,
-            3 => Self::Devil,
-            _ => Self::Demon,
-        };
-    }
-
-    pub fn get_sprite_sheet_index(&self) -> usize {
-        match self {
-            EnemyType::Grub => 1,
-            EnemyType::Skele => 2,
-            EnemyType::Gob => 3,
-            EnemyType::Devil => 4,
-            EnemyType::Demon => 5,
-        }
     }
 }

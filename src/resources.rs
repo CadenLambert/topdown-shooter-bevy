@@ -42,11 +42,6 @@ impl Plugin for ResourcesPlugin {
             BG_COLOR.0, BG_COLOR.1, BG_COLOR.2,
         )))
         .insert_resource(Msaa::Off)
-        // Custom Resources
-        // .insert_resource(GlobalSpriteTextureHandle {
-        //     texture_atlas: None,
-        //     sprite_sheet: None,
-        // })
         .insert_resource(GameResourceSpriteAtlas {
             atlas_layout: None,
             sprite_sheet: None,
@@ -78,21 +73,12 @@ fn load_assets(
     mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
     mut next_state: ResMut<NextState<GameState>>,
 ) {
-    // global_sprite.sprite_sheet = Some(asset_server.load("assets.png"));
-    // let layout = TextureAtlasLayout::from_grid(
-    //     UVec2::splat(SPRITE_TILE_SIZE),
-    //     8,
-    //     8,
-    //     Some(UVec2::splat(1)),
-    //     None,
-    // );
-    // global_sprite.texture_atlas = Some(texture_atlas_layouts.add(layout));
     let common_entity_layout = TextureAtlasLayout::from_grid(
         UVec2::splat(SPRITE_TILE_SIZE),
-        4,
-        2,
+        8,
+        1,
+        Some(UVec2::splat(0)),
         Some(UVec2::splat(1)),
-        None,
     );
     game_entity.atlas_layout = Some(texture_atlas_layouts.add(common_entity_layout));
     game_entity.entity_sheets[0] = Some(asset_server.load("player_sheet.png"));
@@ -106,8 +92,8 @@ fn load_assets(
         UVec2::splat(SPRITE_TILE_SIZE),
         6,
         1,
-        Some(UVec2::splat(1)),
         None,
+        Some(UVec2::splat(1)),
     );
     game_resource.atlas_layout = Some(texture_atlas_layouts.add(resource_layout));
     game_resource.sprite_sheet = Some(asset_server.load("resource_sheet.png"));
@@ -116,8 +102,8 @@ fn load_assets(
         UVec2::splat(SPRITE_TILE_SIZE),
         2,
         1,
+        Some(UVec2::new(1, 0)),
         Some(UVec2::splat(1)),
-        None,
     );
     game_decoration.atlas_layout = Some(texture_atlas_layouts.add(decoration_layout));
     game_decoration.sprite_sheet = Some(asset_server.load("decoration_sheet.png"));

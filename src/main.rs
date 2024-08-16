@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use topdown_shooter::animations::AnimationPlugin;
 use topdown_shooter::camera::FollowCameraPlugin;
 use topdown_shooter::constants::*;
 use topdown_shooter::enemy::EnemyPlugin;
@@ -29,6 +30,7 @@ fn main() {
         .add_plugins(GuiPlugin)
         .add_plugins(GunPlugin)
         .add_plugins(PlayerPlugin)
+        .add_plugins(AnimationPlugin)
         .add_plugins(ResourcesPlugin)
         .add_plugins(WorldPlugin)
         .add_plugins(EnemyPlugin)
