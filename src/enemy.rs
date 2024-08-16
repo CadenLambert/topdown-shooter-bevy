@@ -1,6 +1,7 @@
 use crate::animations::AnimationTimer;
 use crate::constants::{
-    ENEMY_SPAWN_RATE, ENEMY_SPEED, MAX_ENEMY_COUNT, SPRITE_SCALE_FACTOR, WORLD_H, WORLD_W,
+    ENEMY_HEALTH, ENEMY_SPAWN_RATE, ENEMY_SPEED, MAX_ENEMY_COUNT, SPRITE_SCALE_FACTOR, WORLD_H,
+    WORLD_W,
 };
 use crate::player::Player;
 use crate::resources::GameEntitySpriteAtlas;
@@ -9,7 +10,17 @@ use bevy::{math::vec3, prelude::*};
 use rand::Rng;
 
 #[derive(Component)]
-pub struct Enemy;
+pub struct Enemy {
+    pub health: f32,
+}
+
+impl Default for Enemy {
+    fn default() -> Self {
+        Self {
+            health: ENEMY_HEALTH,
+        }
+    }
+}
 
 #[derive(Component)]
 pub enum EnemyType {
@@ -63,7 +74,8 @@ impl Plugin for EnemyPlugin {
         )))
         .add_systems(
             Update,
-            (spawn_enemies, approach_player).run_if(in_state(GameState::InGame)),
+            (spawn_enemies, approach_player, despawn_dead_enemies)
+                .run_if(in_state(GameState::InGame)),
         );
     }
 }
@@ -102,12 +114,20 @@ fn spawn_enemies(
                     layout: game_entities.atlas_layout.clone().unwrap(),
                     index: 0,
                 },
-                Enemy,
+                Enemy::default(),
                 EnemyState::default(),
                 AnimationTimer(Timer::from_seconds(0.125, TimerMode::Repeating)),
             ));
         }
         spawn_timer.0.reset();
+    }
+}
+
+fn despawn_dead_enemies(mut commands: Commands, enemy_query: Query<(&Enemy, Entity), With<Enemy>>) {
+    for (enemy, entity) in enemy_query.iter() {
+        if enemy.health <= 0.0 {
+            commands.entity(entity).despawn();
+        }
     }
 }
 

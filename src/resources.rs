@@ -31,7 +31,7 @@ pub struct CursorPos(pub Option<Vec2>);
 
 #[derive(Resource)]
 pub struct PlayerHealth {
-    pub value: u32,
+    pub value: f32,
 }
 
 pub struct ResourcesPlugin;
@@ -55,7 +55,7 @@ impl Plugin for ResourcesPlugin {
             entity_sheets: vec![None; 6],
         })
         .insert_resource(CursorPos(None))
-        .insert_resource(PlayerHealth { value: 100 })
+        .insert_resource(PlayerHealth { value: 100.0 })
         .add_systems(OnEnter(GameState::Loading), load_assets)
         .add_systems(
             Update,

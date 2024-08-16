@@ -1,4 +1,4 @@
-use crate::{constants::*, state::*};
+use crate::{constants::*, resources::PlayerHealth, state::*};
 use bevy::{math::vec3, prelude::*};
 
 #[derive(Component)]
@@ -11,16 +11,30 @@ pub enum PlayerState {
     Run,
 }
 
+#[derive(Event)]
+pub struct PlayerEnemyCollisionEvent;
+
 pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
+        app.add_event::<PlayerEnemyCollisionEvent>().add_systems(
             Update,
-            handle_player_input.run_if(in_state(GameState::InGame)),
+            (handle_player_input, handle_player_enemy_collision_events)
+                .run_if(in_state(GameState::InGame)),
         );
     }
 }
+
+fn handle_player_enemy_collision_events(
+    mut player_health: ResMut<PlayerHealth>,
+    mut events: EventReader<PlayerEnemyCollisionEvent>,
+) {
+    for _ in events.read() {
+        player_health.as_mut().value -= ENEMY_DAMAGE;
+    }
+}
+
 fn handle_player_input(
     mut player_query: Query<(&mut Transform, &mut PlayerState), With<Player>>,
     keyboard_input: Res<ButtonInput<KeyCode>>,

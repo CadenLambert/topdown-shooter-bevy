@@ -1,5 +1,6 @@
 pub mod animations;
 pub mod camera;
+pub mod collision;
 pub mod constants;
 pub mod enemy;
 pub mod gui;
