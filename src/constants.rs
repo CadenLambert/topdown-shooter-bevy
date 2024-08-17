@@ -1,16 +1,20 @@
+use std::f32::consts::PI;
+
 pub const SPRITE_TILE_SIZE: u32 = 16;
 pub const SPRITE_SCALE_FACTOR: f32 = 3.0;
 pub const WW: f32 = 1200.0;
 pub const WH: f32 = 700.0;
 
 pub const PLAYER_SPEED: f32 = 200.0;
-pub const BULLET_SPEED: f32 = 1000.0;
+pub const BULLET_SPEED: f32 = 2000.0;
 pub const BULLET_DAMAGE: f32 = 25.0;
 pub const GUN_FIRE_RATE: f32 = 0.125;
+pub const NUM_BULLETS: u32 = 9;
+pub const BULLET_RADIUS: f32 = PI / 6.0; // 30 deg
 
-pub const MAX_ENEMY_COUNT: usize = 1000;
-pub const ENEMY_SPAWN_RATE: f32 = 1.0;
-pub const ENEMY_SPEED: f32 = 150.0;
+pub const MAX_ENEMY_COUNT: usize = 100000;
+pub const ENEMY_SPAWN_RATE: f32 = 0.5;
+pub const ENEMY_SPEED: f32 = 100.0;
 pub const ENEMY_HEALTH: f32 = 100.0;
 pub const ENEMY_DAMAGE: f32 = 1.0;
 

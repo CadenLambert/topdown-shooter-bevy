@@ -78,28 +78,33 @@ fn handle_gun_input(
     {
         gun_timer.0.reset();
         let gun_rotation = gun_transform.rotation.to_euler(EulerRot::XYZ).2 + (PI / 2.0);
+        let radian_step = BULLET_RADIUS / (NUM_BULLETS + 1) as f32;
+        let mut bullet_direction = gun_rotation - (BULLET_RADIUS / 2.0);
 
-        commands.spawn((
-            SpriteBundle {
-                texture: game_resource.sprite_sheet.clone().unwrap(),
-                transform: Transform {
-                    translation: gun_transform.translation,
-                    rotation: gun_transform.rotation,
-                    scale: Vec3::splat(SPRITE_SCALE_FACTOR),
+        for _ in 0..NUM_BULLETS {
+            bullet_direction += radian_step;
+            commands.spawn((
+                SpriteBundle {
+                    texture: game_resource.sprite_sheet.clone().unwrap(),
+                    transform: Transform {
+                        translation: gun_transform.translation,
+                        rotation: gun_transform.rotation,
+                        scale: Vec3::splat(SPRITE_SCALE_FACTOR),
+                    },
+                    ..default()
                 },
-                ..default()
-            },
-            TextureAtlas {
-                layout: game_resource.atlas_layout.clone().unwrap(),
-                index: 1,
-            },
-            Bullet {
-                velocity: vec3(gun_rotation.cos(), gun_rotation.sin(), 0.0).normalize()
-                    * BULLET_SPEED,
-                lifetime: Timer::from_seconds(5.0, TimerMode::Once),
-            },
-            GameEntity,
-        ));
+                TextureAtlas {
+                    layout: game_resource.atlas_layout.clone().unwrap(),
+                    index: 1,
+                },
+                Bullet {
+                    velocity: vec3(bullet_direction.cos(), bullet_direction.sin(), 0.0).normalize()
+                        * BULLET_SPEED,
+                    lifetime: Timer::from_seconds(2.0, TimerMode::Once),
+                },
+                GameEntity,
+            ));
+        }
     }
 }
 

@@ -9,6 +9,7 @@ use crate::state::GameState;
 use crate::world::GameEntity;
 use bevy::{math::vec3, prelude::*};
 use rand::Rng;
+use std::f32::consts::PI;
 
 #[derive(Component)]
 pub struct Enemy {
@@ -84,7 +85,7 @@ impl Plugin for EnemyPlugin {
 fn spawn_enemies(
     mut commands: Commands,
     game_entities: Res<GameEntitySpriteAtlas>,
-    //global_sprite: Res<GlobalSpriteTextureHandle>,
+    player_query: Query<&Transform, With<Player>>,
     enemy_query: Query<&Transform, (With<Enemy>, Without<Player>)>,
     mut spawn_timer: ResMut<SpawnTimer>,
     time: Res<Time>,
@@ -92,15 +93,14 @@ fn spawn_enemies(
     spawn_timer.0.tick(time.delta());
     if spawn_timer.0.finished() {
         let num_enemies = enemy_query.iter().len();
-        if num_enemies >= MAX_ENEMY_COUNT {
+        if num_enemies >= MAX_ENEMY_COUNT || player_query.is_empty() {
             return;
         }
-        let enemies_to_spawn = (MAX_ENEMY_COUNT - num_enemies).min(10);
+        let player_pos = player_query.single().translation.truncate();
+        let enemies_to_spawn = (MAX_ENEMY_COUNT - num_enemies).min(1000);
         let enemy_type_to_spawn = EnemyType::get_random_enemy_type();
-        let mut rng = rand::thread_rng();
         for _ in 0..enemies_to_spawn {
-            let x = rng.gen_range(-WORLD_W..WORLD_W);
-            let y = rng.gen_range(-WORLD_H..WORLD_H);
+            let (x, y) = get_random_position_around(player_pos);
             commands.spawn((
                 SpriteBundle {
                     texture: game_entities.entity_sheets
@@ -123,6 +123,20 @@ fn spawn_enemies(
         }
         spawn_timer.0.reset();
     }
+}
+
+fn get_random_position_around(pos: Vec2) -> (f32, f32) {
+    let mut rng = rand::thread_rng();
+    let angle = rng.gen_range(0.0..2.0 * PI);
+    let dist = rng.gen_range(1000.0..5000.0);
+
+    let offset_x = angle.cos() * dist;
+    let offset_y = angle.sin() * dist;
+
+    let random_x = pos.x + offset_x;
+    let random_y = pos.y + offset_y;
+
+    (random_x, random_y)
 }
 
 fn despawn_dead_enemies(mut commands: Commands, enemy_query: Query<(&Enemy, Entity), With<Enemy>>) {
